@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="dsh-grok-bridge">
+  <rect width="64" height="64" rx="14" fill="#10231f"/>
+  <path d="M8 40h14l6-16h8l6 16h14" fill="none" stroke="#d7f26a" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="18" cy="40" r="3" fill="#f4f7f2"/>
+  <circle cx="46" cy="40" r="3" fill="#f4f7f2"/>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Grok 桥",
+    "description": "在本机 DeepSeek Harness 与 Grok Bot 之间，经 Tailscale 双向传递任务与事件。"
+  }
+}

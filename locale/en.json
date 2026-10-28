@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Grok Bridge",
+    "description": "Bidirectional Tailscale bridge between a local DeepSeek Harness and a Grok Bot."
+  }
+}

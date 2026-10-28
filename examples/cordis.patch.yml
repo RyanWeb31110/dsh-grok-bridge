@@ -1,0 +1,28 @@
+# Optional profile override. The installed bundle already reads DSH_GROK_* from
+# the environment, which is the normal way to configure the bridge.
+#
+# A patch replaces the WHOLE config for this id. Copy every key you still want.
+# `name` must stay `dsh-grok-bridge` or the row is skipped.
+#
+# File: $DSH_HOME/profiles/<profile>/cordis.patch.yml
+- id: dsh-grok-bridge
+  name: dsh-grok-bridge
+  config:
+    host: !!js process.env.DSH_GROK_BIND ?? '127.0.0.1'
+    port: !!js Number(process.env.DSH_GROK_PORT ?? 8791)
+    token: !!js process.env.DSH_GROK_TOKEN ?? ''
+    storePath: !!js process.env.DSH_GROK_STORE ?? ''
+    cwd: !!js process.env.DSH_GROK_CWD ?? ''
+    cwdAllowlist: !!js process.env.DSH_GROK_CWD_ALLOWLIST ?? ''
+    provider: !!js process.env.DSH_GROK_PROVIDER ?? ''
+    model: !!js process.env.DSH_GROK_MODEL ?? ''
+    outboundWebhookUrl: !!js process.env.DSH_GROK_OUTBOUND_WEBHOOK_URL ?? ''
+    outboundToken: !!js process.env.DSH_GROK_OUTBOUND_TOKEN ?? ''
+    outboundHmacSecret: !!js process.env.DSH_GROK_OUTBOUND_HMAC_SECRET ?? ''
+    heartbeatMs: !!js Number(process.env.DSH_GROK_HEARTBEAT_MS ?? 0)
+    webhookCompleted: !!js process.env.DSH_GROK_WEBHOOK_COMPLETED ?? ''
+    webhookFailed: !!js process.env.DSH_GROK_WEBHOOK_FAILED ?? ''
+    webhookNeedsApproval: !!js process.env.DSH_GROK_WEBHOOK_NEEDS_APPROVAL ?? ''
+    webhookHeartbeat: !!js process.env.DSH_GROK_WEBHOOK_HEARTBEAT ?? ''
+    maxBodyBytes: 1048576
+    maxTasks: 500

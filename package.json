@@ -1,0 +1,77 @@
+{
+  "name": "dsh-grok-bridge",
+  "version": "0.1.0",
+  "description": "Tailscale bridge so a Grok Bot can drive a local DeepSeek Harness (dsh) and receive task events back.",
+  "type": "module",
+  "license": "MIT",
+  "author": "QingShanLab (https://github.com/QingShanLab)",
+  "homepage": "https://github.com/QingShanLab/dsh-grok-bridge",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QingShanLab/dsh-grok-bridge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/QingShanLab/dsh-grok-bridge/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "grok",
+    "grok-bot",
+    "tailscale",
+    "webhook"
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    },
+    "./icon": "./assets/icon.svg",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "dsh-grok-bridge-demo": "./lib/cli.js"
+  },
+  "files": [
+    "lib",
+    "src",
+    "assets",
+    "locale",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && node --import tsx --test test/*.test.ts",
+    "demo": "npm run build && bash scripts/demo.sh"
+  },
+  "engines": {
+    "node": ">=22.19",
+    "dsh": ">=0.2.0 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5",
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
