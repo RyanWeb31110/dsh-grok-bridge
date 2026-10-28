@@ -6,7 +6,7 @@ dsh-grok-bridge POSTs one JSON object per event. A Grok Bot webhook routine wake
 
 Ask the bot to add a webhook trigger to the routine. On desktop, open the routine. The Webhook section has three fields:
 
-- **POST to** — the URL. This is `DSH_GROK_OUTBOUND_WEBHOOK_URL` when the Mac posts straight to Cursor. On the tailnet happy path it is the receiver on the bot node, and that receiver forwards here.
+- **POST to** — the URL. On the tailnet happy path the Mac's `outboundWebhookUrl` is the receiver on the bot node (`http://100.x.x.x:8792/dsh-events`), and that receiver may forward here. Desktop writes that URL as a literal in `~/.dsh/profiles/desktop/cordis.patch.yml`, not as a shell export. Direct posts to Cursor use the routine URL itself and leave the tailnet.
 - **key** — the secret. Senders pass it as `Authorization: Bearer <key>`. The bridge also sends the same value as `X-Automation-Key`.
 - **header** — the full `Authorization` line, ready to copy.
 
@@ -14,10 +14,12 @@ Leave the routine Active. A paused routine does not start a run.
 
 ## Happy path vs cloud URL
 
-| Path | `OUTBOUND_WEBHOOK_URL` | Leaves the tailnet? |
+| Path | `outboundWebhookUrl` | Leaves the tailnet? |
 |---|---|---|
 | Happy path | `http://100.x.x.x:8792/dsh-events` or `https://<bot>.ts.net/dsh-events` | No. The Mac only talks to the bot node. |
 | Direct to Cursor | `https://api2.cursor.sh/automations/webhook/<id>` | Yes. Use this only when you accept that hop. |
+
+On desktop, `outboundWebhookUrl`, `outboundToken`, and `outboundHmacSecret` are literals in the profile patch. `dsh web` can set the same values with `DSH_GROK_OUTBOUND_WEBHOOK_URL`, `DSH_GROK_OUTBOUND_TOKEN`, and `DSH_GROK_OUTBOUND_HMAC_SECRET`.
 
 `scripts/tailnet-receiver.mjs` is the small checker you can run on the bot node. It verifies the bearer token and HMAC, appends the body to a log, and optionally forwards the same JSON to the routine URL.
 
@@ -72,7 +74,7 @@ If the Mac uses tailscale serve, call https://<mac>.ts.net/v1/tasks instead. A 2
 
 ## Signature
 
-When `DSH_GROK_OUTBOUND_HMAC_SECRET` is set, the bridge sends:
+When `outboundHmacSecret` is set (desktop patch literal, or `DSH_GROK_OUTBOUND_HMAC_SECRET` for `dsh web`), the bridge sends:
 
 - `X-Dsh-Timestamp`: unix seconds
 - `X-Dsh-Signature`: `sha256=` plus HMAC-SHA256 of `` `${timestamp}.${rawBody}` ``

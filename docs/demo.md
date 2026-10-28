@@ -33,18 +33,14 @@ That builds `lib/`, starts `scripts/tailnet-receiver.mjs` on `127.0.0.1:18792`, 
 
 ## On two tailnet machines
 
-Terminal A, the Mac, after [install](../README.md#install):
+Desktop app on the Mac, after the [desktop quickstart](../README.md#desktop-quickstart):
 
-```sh
-export DSH_GROK_TOKEN="$(openssl rand -hex 32)"
-export DSH_GROK_BIND=127.0.0.1
-export DSH_GROK_PORT=8791
-export DSH_GROK_OUTBOUND_WEBHOOK_URL='http://100.B.B.B:8792/dsh-events'
-export DSH_GROK_OUTBOUND_TOKEN="$(openssl rand -hex 32)"
-export DSH_GROK_OUTBOUND_HMAC_SECRET="$(openssl rand -hex 32)"
-sudo tailscale serve --bg 8791
-dsh web
-```
+- Plugin installed with `dsh plugin --profile desktop add github:RyanWeb31110/dsh-grok-bridge`.
+- `~/.dsh/profiles/desktop/cordis.patch.yml` holds literals: `host: 127.0.0.1`, `port: 8791`, the inbound `token`, empty `provider` and `model`, and outbound URL `http://100.B.B.B:8792/dsh-events` plus `outboundToken` and `outboundHmacSecret`.
+- The app was quit and reopened. Do not rely on shell `export` or `launchctl setenv`; the Electron app will not see them.
+- `sudo tailscale serve --bg 8791` is running.
+
+`dsh web` can use the environment instead. See [CLI](../README.md#cli-dsh-web) and [examples/cordis.patch.env.yml](../examples/cordis.patch.env.yml).
 
 Terminal B, the Grok Bot node:
 
@@ -77,4 +73,10 @@ curl -sS -X POST "https://<mac>.ts.net/v1/tasks/<id>/steer" \
   -d '{"text":"Focus on untracked files."}'
 ```
 
-Direct `100.x` URLs work when the bridge is bound to the Tailscale address instead of `tailscale serve`. See the README.
+Direct `100.x` URLs work when the desktop patch sets `host` to the Mac's Tailscale address instead of using `tailscale serve`. See the README.
+
+A per-task model is a pair on the POST body. Omit both to follow `agent-default-model`:
+
+```json
+{"prompt":"Reply with exactly: opus-ok","title":"e2e opus 5.5","provider":"magpie-anthropic","model":"rootflowai-2/claude-opus-5-5"}
+```
