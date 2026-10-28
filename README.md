@@ -2,7 +2,7 @@
 
 Tailscale bridge between a DeepSeek Harness (`dsh`) on your machine and a Grok Bot on another tailnet node.
 
-**中文摘要：** 这是一个 DeepSeek Harness 插件。它在你的电脑上提供只走 Tailscale（`100.x`）的 HTTP 接口，让远端 Grok Bot 用共享令牌下发任务、查询状态、中途补充指令；dsh 完成、失败或需要批准时，再把事件用 HMAC 签回 Grok Bot。默认不走公网 Funnel，仓库里没有任何密钥。作者 [@QingShanLab](https://github.com/QingShanLab)。公开仓库是 [RyanWeb31110/dsh-grok-bridge](https://github.com/RyanWeb31110/dsh-grok-bridge)。
+**中文摘要：** 这是 DeepSeek Harness 的 Tailscale 插件。作者 [@QingShanLab](https://github.com/QingShanLab)，仓库 [RyanWeb31110/dsh-grok-bridge](https://github.com/RyanWeb31110/dsh-grok-bridge)。桌面版把令牌和出站地址写成 `~/.dsh/profiles/desktop/cordis.patch.yml` 里的字面量，不要靠 shell 环境变量或 `launchctl setenv`。Grok 经 `https://<你的Mac>.ts.net` 下发任务；本机跑完后，用 Bearer 和 HMAC 把 `task.completed` 推到机器人节点的 `http://100.x:8792/dsh-events`。`provider` 和 `model` 留空则跟随桌面默认模型；单次任务也可以在 POST 正文里成对指定。默认不走公网 Funnel，仓库里没有密钥。
 
 The bridge is a Cordis plugin. It runs inside `dsh`, binds an HTTP API, and keeps a task ↔ session map on disk. Grok creates work with `POST /v1/tasks`. dsh runs it. Terminal events go back out as signed webhooks. v0.1 does not grant tool approvals and does not post anywhere public.
 
@@ -36,72 +36,118 @@ Grok                bridge                 dsh agent              Grok routine
 
 Session logs stay in dsh's own persistence. This plugin's file only remembers which task id belongs to which session id, plus the last status the bridge observed. A restart reloads that file and resumes non-terminal sessions.
 
-## Install
+## Desktop quickstart
 
-Requires Node.js 22.19+ and a DeepSeek Harness 0.2.x profile that stays running. `dsh web` is the usual one. A one-shot `dsh` invocation exits and takes the bridge with it. The profile must include session persistence (the stock `web` and `headless` templates do; `sdk-minimal` does not).
+DeepSeek Harness desktop is an Electron app. `open -a` does not inherit your shell, so the working setup writes **literals** into the desktop profile patch. Do not use `launchctl setenv` for this. The desktop profile is owned by the app; `dsh --profile desktop --dump-config` is not a reliable check.
 
-The published tree includes `lib/`, so a git install does not need a build script.
+Requires Node.js 22.19+ and DeepSeek Harness 0.2.x. The published tree includes `lib/`, so a git install does not need a build script. The profile must include session persistence (desktop and `web` do; `sdk-minimal` does not). A one-shot `dsh` command exits and takes the bridge with it.
+
+1. Install into the desktop profile:
+
+```sh
+dsh plugin --profile desktop add github:RyanWeb31110/dsh-grok-bridge
+```
+
+2. Generate two secrets on the Mac (`openssl rand -hex 32` twice). Put them in `~/.dsh/profiles/desktop/cordis.patch.yml`. A row with this id **replaces the whole config**, so restate every key. `name` must stay `dsh-grok-bridge`. Leave `provider` and `model` as empty strings so sessions follow the profile's `agent-default-model` (the same route as a new chat). Full copy: [examples/cordis.patch.yml](examples/cordis.patch.yml).
+
+```yaml
+- id: dsh-grok-bridge
+  name: dsh-grok-bridge
+  config:
+    host: 127.0.0.1
+    port: 8791
+    token: 'replace-with-inbound-bearer'
+    storePath: ''
+    cwd: ''
+    cwdAllowlist: ''
+    provider: ''
+    model: ''
+    outboundWebhookUrl: 'http://100.x.x.x:8792/dsh-events'
+    outboundToken: 'replace-with-outbound-bearer'
+    outboundHmacSecret: 'replace-with-hmac-secret'
+    heartbeatMs: 0
+    webhookCompleted: ''
+    webhookFailed: ''
+    webhookNeedsApproval: ''
+    webhookHeartbeat: ''
+    maxBodyBytes: 1048576
+    maxTasks: 500
+```
+
+`outboundWebhookUrl` is the bot node. `scripts/tailnet-receiver.mjs` listens there, checks the bearer and HMAC, and appends the JSON. `100.x.x.x` is that node's Tailscale address.
+
+3. Quit and reopen the desktop app so it reloads the patch.
+
+4. Keep the bridge on loopback and publish it on the tailnet:
+
+```sh
+sudo tailscale serve --bg 8791
+tailscale serve status
+```
+
+5. On the Mac:
+
+```sh
+curl -sS http://127.0.0.1:8791/healthz
+```
+
+Expect `{"ok":true,"name":"dsh-grok-bridge",...}`.
+
+6. From the Grok Bot node (or any tailnet peer allowed by your ACL):
+
+```sh
+curl -sS -X POST "https://<mac>.ts.net/v1/tasks" \
+  -H "Authorization: Bearer <inbound-bearer>" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Reply with exactly: bridge-ok","title":"desktop smoke"}'
+```
+
+When the turn ends, the bot node log grows a signed `task.completed`. The desktop session list shows the new chat. Omit `provider` and `model` in that JSON to keep the profile default. To pin one session, send both fields; see [Create](#create).
+
+Remove the plugin with `dsh plugin --profile desktop remove dsh-grok-bridge`.
+
+`launchctl setenv` can push variables into GUI apps, but it is a last resort, it is easy to forget after reboot, and it is unnecessary when the patch holds literals.
+
+## CLI (`dsh web`)
+
+Same package, different profile. Shell environment works here because you start the process yourself. The shipped bundle reads `DSH_GROK_*` (see `.env.example`). Do not put those variables in `~/.dsh/.env`; some dsh versions treat unknown `DSH_*` keys there as fatal.
 
 ```sh
 dsh plugin --profile web add github:RyanWeb31110/dsh-grok-bridge
-```
-
-From a local checkout:
-
-```sh
-dsh plugin --profile web add /absolute/path/to/dsh-grok-bridge
-```
-
-Restart dsh. Confirm the layer:
-
-```sh
-dsh --profile web --dump-config
-```
-
-You should see a `dsh-grok-bridge` row. Remove it with:
-
-```sh
-dsh plugin --profile web remove dsh-grok-bridge
-```
-
-Targeted against the public plugin contract for `@deepseek-ai/dsh` 0.2.x (`engines.dsh`: `>=0.2.0 <0.3.0`): `ctx.agents.create` / `resume`, `followup` / `steer`, `session/event` (`assistant/message`, `turn/end`), `agent/status`, `agent/error`, and the `approval/request` waterfall. Re-check after a harness major bump.
-
-## Configure
-
-Copy `.env.example` to a file you source in the shell that launches dsh. The bundle patch reads `process.env`. Do not put these variables in `~/.dsh/.env`; some dsh versions treat unknown `DSH_*` keys there as fatal.
-
-```sh
 export DSH_GROK_TOKEN="$(openssl rand -hex 32)"
 export DSH_GROK_BIND=127.0.0.1
 export DSH_GROK_PORT=8791
 export DSH_GROK_OUTBOUND_WEBHOOK_URL="http://100.x.x.x:8792/dsh-events"
 export DSH_GROK_OUTBOUND_TOKEN="$(openssl rand -hex 32)"
 export DSH_GROK_OUTBOUND_HMAC_SECRET="$(openssl rand -hex 32)"
+dsh web
 ```
 
-| Variable | Role |
-|---|---|
-| `DSH_GROK_TOKEN` | Inbound bearer. Empty means every `/v1` call returns 401. |
-| `DSH_GROK_BIND` / `DSH_GROK_PORT` | Default `127.0.0.1:8791`. |
-| `DSH_GROK_STORE` | Task JSON. Default `$DSH_HOME/dsh-grok-bridge/tasks.json`. |
-| `DSH_GROK_CWD` | Default working directory. Per-request `cwd` overrides it. |
-| `DSH_GROK_CWD_ALLOWLIST` | Optional comma-separated absolute prefixes. |
-| `DSH_GROK_PROVIDER` / `DSH_GROK_MODEL` | Optional overrides. Leave both unset to use the profile's `agent-default-model`, the same route as a new desktop chat. |
-| `DSH_GROK_OUTBOUND_WEBHOOK_URL` | Where events go. Prefer a `100.x` or `*.ts.net` URL. |
-| `DSH_GROK_OUTBOUND_TOKEN` | Sent as `Authorization: Bearer` and `X-Automation-Key`. |
-| `DSH_GROK_OUTBOUND_HMAC_SECRET` | HMAC key for `X-Dsh-Signature`. |
-| `DSH_GROK_WEBHOOK_COMPLETED` and the `_FAILED`, `_NEEDS_APPROVAL`, `_HEARTBEAT` twins | Optional per-event URL overrides. |
-| `DSH_GROK_HEARTBEAT_MS` | `0` off. Any other value is at least 60000. |
+`dsh --profile web --dump-config` should show a `dsh-grok-bridge` row. An env-shaped patch is in [examples/cordis.patch.env.yml](examples/cordis.patch.env.yml). From a local checkout, `dsh plugin --profile web add /absolute/path/to/dsh-grok-bridge` (use `desktop` instead of `web` for the app).
 
-Leave `DSH_GROK_PROVIDER` and `DSH_GROK_MODEL` unset for normal use. The bridge copies `ctx.agentDefaultModel.currentSelection()` into each new and resumed session, so `{{model}}` is filled from the running profile (desktop's `agent-default-model` row, for example `magpie-responses` / `grok/grok-4.7`). Set both variables only when this bridge should use a different route than a new chat. Setting just one is ignored.
+Targeted against `@deepseek-ai/dsh` 0.2.x (`engines.dsh`: `>=0.2.0 <0.3.0`): `ctx.agents.create` / `resume`, `agent.model.select`, `followup` / `steer`, `session/event`, `agent/status`, `agent/error`, and the `approval/request` waterfall.
 
-A profile `cordis.patch.yml` that targets id `dsh-grok-bridge` **replaces the whole config**. Restate every key. `examples/cordis.patch.yml` is a full copy. `name` must stay `dsh-grok-bridge`.
+## Configure
 
-An empty outbound token **and** an empty HMAC secret means events are not sent, even if a URL is set.
+| Key | Desktop patch | Env (CLI only) | Role |
+|---|---|---|---|
+| `token` | literal | `DSH_GROK_TOKEN` | Inbound bearer. Empty rejects every `/v1` call. |
+| `host` / `port` | `127.0.0.1` / `8791` | `DSH_GROK_BIND` / `DSH_GROK_PORT` | Loopback, then `tailscale serve`. |
+| `storePath` | `''` | `DSH_GROK_STORE` | Empty uses `$DSH_HOME/dsh-grok-bridge/tasks.json`. |
+| `cwd` | `''` | `DSH_GROK_CWD` | Default working directory. Per-request `cwd` overrides it. |
+| `cwdAllowlist` | `''` | `DSH_GROK_CWD_ALLOWLIST` | Optional comma-separated absolute prefixes. |
+| `provider` / `model` | `''` / `''` | `DSH_GROK_PROVIDER` / `DSH_GROK_MODEL` | Leave empty to follow `agent-default-model`. Set both only to override every task. |
+| `outboundWebhookUrl` | `http://100.x.x.x:8792/dsh-events` | `DSH_GROK_OUTBOUND_WEBHOOK_URL` | Bot-node receiver. |
+| `outboundToken` | literal | `DSH_GROK_OUTBOUND_TOKEN` | `Authorization: Bearer` and `X-Automation-Key`. |
+| `outboundHmacSecret` | literal | `DSH_GROK_OUTBOUND_HMAC_SECRET` | HMAC key for `X-Dsh-Signature`. |
+| `webhookCompleted` and the Failed / NeedsApproval / Heartbeat twins | `''` | `DSH_GROK_WEBHOOK_*` | Optional per-event URL overrides. |
+| `heartbeatMs` | `0` | `DSH_GROK_HEARTBEAT_MS` | `0` off. Any other value is at least 60000. |
+
+Empty `provider` and `model` copy `ctx.agentDefaultModel.currentSelection()` into the session, which is the desktop `agent-default-model` row. Do not paste that pair into the bridge config. Setting only one of the two is ignored. An empty outbound token **and** an empty HMAC secret means events are not sent, even if a URL is set.
 
 ## API
 
-`GET /healthz` has no auth and returns only `{ "ok": true, "name": "dsh-grok-bridge", "version" }`. Everything else requires `Authorization: Bearer <DSH_GROK_TOKEN>`.
+`GET /healthz` has no auth and returns only `{ "ok": true, "name": "dsh-grok-bridge", "version" }`. Everything else requires `Authorization: Bearer` plus the inbound token (the desktop patch `token`, or `DSH_GROK_TOKEN` when you started `dsh web`).
 
 ### Create
 
@@ -222,23 +268,18 @@ Tag the Mac `tag:dsh-mac` and the bot host `tag:grok-bot`. Port 443 is for `tail
 
 ### `tailscale serve` (bridge stays on loopback)
 
+Desktop: the patch already sets `host: 127.0.0.1` and `port: 8791`. Then:
+
 ```sh
-export DSH_GROK_BIND=127.0.0.1
-export DSH_GROK_PORT=8791
 sudo tailscale serve --bg 8791
 tailscale serve status
 ```
 
-Grok then calls `https://<mac>.ts.net/v1/tasks`. MagicDNS must be on. The certificate stays inside the tailnet. This is the preferred bind.
+Grok calls `https://<mac>.ts.net/v1/tasks`. MagicDNS must be on. The certificate stays inside the tailnet. This is the preferred inbound path. For `dsh web`, the same ports can come from `DSH_GROK_BIND` and `DSH_GROK_PORT`.
 
 ### Direct bind on the Tailscale address
 
-```sh
-export DSH_GROK_BIND="$(tailscale ip -4)"
-export DSH_GROK_PORT=8791
-```
-
-Grok calls `http://100.d.e.f:8791/v1/tasks`. Use the ACL above. `0.0.0.0` also works if the ACL, and nothing else, can reach the port. The process logs a warning when it binds all interfaces or a non-tailnet address.
+Set `host` in the desktop patch to the Mac's `100.x` address (or export `DSH_GROK_BIND="$(tailscale ip -4)"` for `dsh web`) and keep port `8791`. Grok calls `http://100.d.e.f:8791/v1/tasks`. Use the ACL above. `0.0.0.0` also works if the ACL, and nothing else, can reach the port. The process logs a warning when it binds all interfaces or a non-tailnet address.
 
 ### Receiver on the bot node
 

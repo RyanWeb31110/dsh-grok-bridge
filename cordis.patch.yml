@@ -1,6 +1,7 @@
-# Inserted when this bundle is on a dsh profile.
-# A later profile cordis.patch.yml that targets id dsh-grok-bridge replaces this
-# whole config object. Copy examples/cordis.patch.yml and restate every key.
+# Shipped default. Reads DSH_GROK_* so `dsh web` can be configured from the shell.
+# Desktop (Electron) does not see that environment. Override this id in
+# ~/.dsh/profiles/desktop/cordis.patch.yml with literals. See examples/cordis.patch.yml.
+# A later patch that targets id dsh-grok-bridge replaces this whole config.
 - insert:
     - id: dsh-grok-bridge
       name: dsh-grok-bridge
