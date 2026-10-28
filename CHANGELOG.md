@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-10-28
+
+- `POST /v1/tasks` accepts an optional `provider` and `model` pair. Both are required together. They become the session route (`agentOptions` plus a durable `model/selection`) so the desktop model picker shows that model. Omit both to keep the profile default.
+
 ## 0.1.1 — 2026-10-28
 
 - Unset `DSH_GROK_PROVIDER` and `DSH_GROK_MODEL` now inherit the running profile's `agent-default-model` (`ctx.agentDefaultModel.currentSelection()`), the same route a new desktop chat uses. Those variables are optional overrides only.

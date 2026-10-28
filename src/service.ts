@@ -46,6 +46,10 @@ export interface CreateTaskInput {
   cwd?: unknown
   title?: unknown
   metadata?: unknown
+  /** Per-task route. Set with `model`, or omit both to inherit the profile default. */
+  provider?: unknown
+  /** Per-task route. Set with `provider`, or omit both to inherit the profile default. */
+  model?: unknown
 }
 
 export interface TaskService {
@@ -107,8 +111,26 @@ export function isTaskId(id: string): boolean {
   return TASK_ID.test(id)
 }
 
-function launchFor(config: BridgeConfig, sessionId: string, cwd: string): AgentLaunch {
-  const route = modelRoute(config)
+/** Body route, else the process-wide env override. Undefined means inherit agent-default-model. */
+export function resolveTaskRoute(
+  input: { provider?: unknown; model?: unknown },
+  config: BridgeConfig,
+): { provider: string; model: string } | undefined {
+  const provider = typeof input.provider === 'string' ? input.provider.trim() : ''
+  const model = typeof input.model === 'string' ? input.model.trim() : ''
+  if (provider || model) {
+    if (!provider || !model) throw new BridgeError(400, 'invalid_model_route')
+    return { provider, model }
+  }
+  return modelRoute(config)
+}
+
+function taskRoute(task: TaskRecord): { provider: string; model: string } | undefined {
+  if (task.provider && task.model) return { provider: task.provider, model: task.model }
+  return undefined
+}
+
+function launchFor(sessionId: string, cwd: string, route: { provider: string; model: string } | undefined): AgentLaunch {
   return {
     sessionId,
     cwd,
@@ -166,7 +188,7 @@ export function createTaskService(options: ServiceOptions): TaskService {
   }
 
   async function ensureLive(task: TaskRecord, text: string, kind: 'followup' | 'steer'): Promise<void> {
-    const launch = launchFor(config, task.sessionId, task.cwd)
+    const launch = launchFor(task.sessionId, task.cwd, taskRoute(task))
     if (!driver.has(task.sessionId)) {
       // Resume of an orphaned turn emits `interrupted`. A steer is about to
       // continue that session, so that closer must not fail the task.
@@ -192,6 +214,7 @@ export function createTaskService(options: ServiceOptions): TaskService {
       const prompt = requirePrompt(input.prompt)
       const cwd = resolveCwd(input.cwd)
       const metadata = metadataOf(input.metadata)
+      const route = resolveTaskRoute(input, config)
       const createdAt = stamp()
       const task: TaskRecord = {
         id: `task_${randomUUID().replaceAll('-', '')}`,
@@ -205,12 +228,13 @@ export function createTaskService(options: ServiceOptions): TaskService {
         revision: 0,
         sessionReady: false,
         steerCount: 0,
+        ...(route ? { provider: route.provider, model: route.model } : {}),
         ...(metadata ? { metadata } : {}),
         ...(key ? { idempotencyKey: key } : {}),
       }
       store.upsert(task)
       try {
-        await driver.create(launchFor(config, task.sessionId, task.cwd))
+        await driver.create(launchFor(task.sessionId, task.cwd, route))
         driver.followup(task.sessionId, prompt)
         const saved = save(task, { sessionReady: true })
         logger.info(`task ${saved.id} queued on session ${saved.sessionId}`)
@@ -343,7 +367,7 @@ export function createTaskService(options: ServiceOptions): TaskService {
           continue
         }
         try {
-          await driver.resume(launchFor(config, task.sessionId, task.cwd))
+          await driver.resume(launchFor(task.sessionId, task.cwd, taskRoute(task)))
           logger.info(`resumed session ${task.sessionId} for task ${task.id}`)
         } catch (error) {
           const message = error instanceof Error ? error.message : 'resume failed'

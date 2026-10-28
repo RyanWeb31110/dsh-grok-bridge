@@ -22,6 +22,10 @@ export interface CreateTaskInput {
     cwd?: unknown;
     title?: unknown;
     metadata?: unknown;
+    /** Per-task route. Set with `model`, or omit both to inherit the profile default. */
+    provider?: unknown;
+    /** Per-task route. Set with `provider`, or omit both to inherit the profile default. */
+    model?: unknown;
 }
 export interface TaskService {
     createTask(input: CreateTaskInput, idempotencyKey?: string): Promise<{
@@ -56,5 +60,13 @@ export interface ServiceOptions {
 }
 export declare function assertIdempotencyKey(key: string | undefined): string | undefined;
 export declare function isTaskId(id: string): boolean;
+/** Body route, else the process-wide env override. Undefined means inherit agent-default-model. */
+export declare function resolveTaskRoute(input: {
+    provider?: unknown;
+    model?: unknown;
+}, config: BridgeConfig): {
+    provider: string;
+    model: string;
+} | undefined;
 export declare function createTaskService(options: ServiceOptions): TaskService;
 //# sourceMappingURL=service.d.ts.map

@@ -58,6 +58,38 @@ test('empty provider and model inherit the profile default on create and resume'
   }])
 })
 
+test('an explicit launch route is recorded with model.select', async () => {
+  const selected: unknown[] = []
+  const calls = { create: [] as unknown[], resume: [] as unknown[] }
+  const ctx = harness({ provider: 'magpie-responses', model: 'grok/grok-4.7' }, calls)
+  const created = ctx.agents.create
+  ctx.agents.create = async (options) => {
+    const handle = await created(options)
+    handle.agent.model = {
+      select(selection) {
+        selected.push(selection)
+      },
+    }
+    return handle
+  }
+  const config = normalizeConfig({ provider: '', model: '' })
+  const port = createDshAgentPort(ctx, config, silent)
+  await port.create({
+    sessionId: 'session-opus',
+    cwd: '/work',
+    provider: 'magpie-anthropic',
+    model: 'rootflowai-2/claude-opus-5-5',
+  })
+  assert.equal(selected.length, 1)
+  assert.deepEqual(selected[0], {
+    provider: 'magpie-anthropic',
+    model: 'rootflowai-2/claude-opus-5-5',
+  })
+  const createdOptions = calls.create[0] as { agentOptions: { provider: string; model: string } }
+  assert.equal(createdOptions.agentOptions.provider, 'magpie-anthropic')
+  assert.equal(createdOptions.agentOptions.model, 'rootflowai-2/claude-opus-5-5')
+})
+
 test('an explicit provider and model override the profile default', async () => {
   let consulted = false
   const calls = { create: [] as unknown[], resume: [] as unknown[] }

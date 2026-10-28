@@ -26,6 +26,9 @@ export interface TaskRecord {
     error?: string;
     endReason?: string;
     approval?: ApprovalInfo;
+    /** Explicit session route. Absent means the profile default. */
+    provider?: string;
+    model?: string;
     metadata?: Record<string, unknown>;
     idempotencyKey?: string;
 }
@@ -45,6 +48,8 @@ export interface PublicTask {
     error?: string;
     endReason?: string;
     approval?: ApprovalInfo;
+    provider?: string;
+    model?: string;
     metadata?: Record<string, unknown>;
 }
 export declare function toPublicTask(task: TaskRecord): PublicTask;

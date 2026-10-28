@@ -40,6 +40,9 @@ export interface TaskRecord {
   error?: string
   endReason?: string
   approval?: ApprovalInfo
+  /** Explicit session route. Absent means the profile default. */
+  provider?: string
+  model?: string
   metadata?: Record<string, unknown>
   idempotencyKey?: string
 }
@@ -60,6 +63,8 @@ export interface PublicTask {
   error?: string
   endReason?: string
   approval?: ApprovalInfo
+  provider?: string
+  model?: string
   metadata?: Record<string, unknown>
 }
 
@@ -81,6 +86,8 @@ export function toPublicTask(task: TaskRecord): PublicTask {
   if (task.error !== undefined) pub.error = task.error
   if (task.endReason !== undefined) pub.endReason = task.endReason
   if (task.approval !== undefined) pub.approval = task.approval
+  if (task.provider !== undefined) pub.provider = task.provider
+  if (task.model !== undefined) pub.model = task.model
   if (task.metadata !== undefined) pub.metadata = task.metadata
   return pub
 }

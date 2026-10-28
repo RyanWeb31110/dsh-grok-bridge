@@ -115,6 +115,14 @@ curl -sS -X POST "http://127.0.0.1:8791/v1/tasks" \
   -d '{"prompt":"Summarize git status","cwd":"/Users/me/project","title":"git status"}'
 ```
 
+Omit `provider` and `model` to use the profile default. To pin a different model on this session only, send both. The bridge passes them as `agentOptions` and records a `model/selection`, which is what the desktop model picker reads:
+
+```json
+{"prompt":"Reply with exactly: opus-ok","title":"e2e opus 5.5","provider":"magpie-anthropic","model":"rootflowai-2/claude-opus-5-5"}
+```
+
+One of the two fields without the other is `invalid_model_route`. A body route wins over `DSH_GROK_PROVIDER` / `DSH_GROK_MODEL`. The chosen pair is stored on the task and reused on resume.
+
 ```json
 { "ok": true, "task": { "id": "task_…", "sessionId": "…", "status": "queued" } }
 ```
@@ -145,7 +153,7 @@ The same idempotency key returns `200` and the original task. The key is remembe
 
 ### Errors
 
-`{ "ok": false, "error": "<code>" }` with `unauthorized`, `not_found`, `invalid_json`, `invalid_body`, `empty_prompt`, `prompt_too_large`, `payload_too_large`, `cwd_not_allowed`, `agent_failed`, `invalid_idempotency_key`, `invalid_metadata`, `metadata_too_large`, `invalid_limit`, `method_not_allowed`.
+`{ "ok": false, "error": "<code>" }` with `unauthorized`, `not_found`, `invalid_json`, `invalid_body`, `empty_prompt`, `prompt_too_large`, `payload_too_large`, `cwd_not_allowed`, `agent_failed`, `invalid_model_route`, `invalid_idempotency_key`, `invalid_metadata`, `metadata_too_large`, `invalid_limit`, `method_not_allowed`.
 
 ## Outbound events
 

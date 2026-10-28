@@ -1,10 +1,19 @@
 import type { BridgeConfig } from './config.js';
 import type { Logger } from './logger.js';
 import type { AgentPort } from './service.js';
+interface SelectableModel {
+    select?(selection: {
+        provider: string;
+        model: string;
+        reasoningEffort?: string;
+    }): void;
+}
 interface AgentHandle {
     agent: {
         followup(message: unknown): unknown;
         steer(message: unknown): unknown;
+        /** Present on dsh 0.2 agents. Writes the durable `model/selection` the desktop picker reads. */
+        model?: SelectableModel;
     };
     dispose?: () => Promise<void>;
 }

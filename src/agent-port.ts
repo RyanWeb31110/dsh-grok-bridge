@@ -4,10 +4,16 @@ import type { Logger } from './logger.js'
 import { userMessage } from './message.js'
 import type { AgentLaunch, AgentPort } from './service.js'
 
+interface SelectableModel {
+  select?(selection: { provider: string; model: string; reasoningEffort?: string }): void
+}
+
 interface AgentHandle {
   agent: {
     followup(message: unknown): unknown
     steer(message: unknown): unknown
+    /** Present on dsh 0.2 agents. Writes the durable `model/selection` the desktop picker reads. */
+    model?: SelectableModel
   }
   dispose?: () => Promise<void>
 }
@@ -91,7 +97,7 @@ export function createDshAgentPort(ctx: DshContext, config: BridgeConfig, logger
    * `agentOptions`. Omitting the route leaves `{{model}}` empty and the
    * persona prefix fails on the first turn.
    */
-  function optionsFor(launch: AgentLaunch): Record<string, unknown> {
+  function optionsFor(launch: AgentLaunch): { fields: Record<string, unknown>; explicit: ResolvedRoute | undefined } {
     const explicit = routeOf(config, launch)
     const route = explicit ?? readProfileDefault(ctx.agentDefaultModel)
     if (!route) {
@@ -104,7 +110,22 @@ export function createDshAgentPort(ctx: DshContext, config: BridgeConfig, logger
       const effort = route.reasoningEffort ? ` effort ${route.reasoningEffort}` : ''
       logger.info(`using profile default model ${route.provider}/${route.model}${effort}`)
     }
-    return { agentOptions: agentOptions(route) }
+    return { fields: { agentOptions: agentOptions(route) }, explicit }
+  }
+
+  /** Record an explicit route as `model/selection` so the desktop picker does not keep showing the profile default. */
+  function pinSelection(agent: AgentHandle['agent'], route: ResolvedRoute | undefined): void {
+    if (!route) return
+    const select = agent.model?.select
+    if (typeof select !== 'function') {
+      logger.warn('agent has no model.select; the desktop picker may keep showing the profile default')
+      return
+    }
+    select.call(agent.model, {
+      provider: route.provider,
+      model: route.model,
+      ...(route.reasoningEffort ? { reasoningEffort: route.reasoningEffort } : {}),
+    })
   }
 
   return {
@@ -113,19 +134,23 @@ export function createDshAgentPort(ctx: DshContext, config: BridgeConfig, logger
     },
 
     async create(launch) {
+      const resolved = optionsFor(launch)
       const handle = await ctx.agents.create({
         sessionId: launch.sessionId,
         meta: { cwd: launch.cwd },
-        ...optionsFor(launch),
+        ...resolved.fields,
       })
+      pinSelection(handle.agent, resolved.explicit)
       remember(launch.sessionId, handle)
     },
 
     async resume(launch) {
+      const resolved = optionsFor(launch)
       const handle = await ctx.agents.resume({
         resumeSessionId: launch.sessionId,
-        ...optionsFor(launch),
+        ...resolved.fields,
       })
+      pinSelection(handle.agent, resolved.explicit)
       remember(launch.sessionId, handle)
     },
 
