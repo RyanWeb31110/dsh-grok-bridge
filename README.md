@@ -86,12 +86,14 @@ export DSH_GROK_OUTBOUND_HMAC_SECRET="$(openssl rand -hex 32)"
 | `DSH_GROK_STORE` | Task JSON. Default `$DSH_HOME/dsh-grok-bridge/tasks.json`. |
 | `DSH_GROK_CWD` | Default working directory. Per-request `cwd` overrides it. |
 | `DSH_GROK_CWD_ALLOWLIST` | Optional comma-separated absolute prefixes. |
-| `DSH_GROK_PROVIDER` / `DSH_GROK_MODEL` | Set both, or neither to keep the profile's model route. |
+| `DSH_GROK_PROVIDER` / `DSH_GROK_MODEL` | Optional overrides. Leave both unset to use the profile's `agent-default-model`, the same route as a new desktop chat. |
 | `DSH_GROK_OUTBOUND_WEBHOOK_URL` | Where events go. Prefer a `100.x` or `*.ts.net` URL. |
 | `DSH_GROK_OUTBOUND_TOKEN` | Sent as `Authorization: Bearer` and `X-Automation-Key`. |
 | `DSH_GROK_OUTBOUND_HMAC_SECRET` | HMAC key for `X-Dsh-Signature`. |
 | `DSH_GROK_WEBHOOK_COMPLETED` and the `_FAILED`, `_NEEDS_APPROVAL`, `_HEARTBEAT` twins | Optional per-event URL overrides. |
 | `DSH_GROK_HEARTBEAT_MS` | `0` off. Any other value is at least 60000. |
+
+Leave `DSH_GROK_PROVIDER` and `DSH_GROK_MODEL` unset for normal use. The bridge copies `ctx.agentDefaultModel.currentSelection()` into each new and resumed session, so `{{model}}` is filled from the running profile (desktop's `agent-default-model` row, for example `magpie-responses` / `grok/grok-4.7`). Set both variables only when this bridge should use a different route than a new chat. Setting just one is ignored.
 
 A profile `cordis.patch.yml` that targets id `dsh-grok-bridge` **replaces the whole config**. Restate every key. `examples/cordis.patch.yml` is a full copy. `name` must stay `dsh-grok-bridge`.
 

@@ -1,6 +1,6 @@
 {
   "name": "dsh-grok-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tailscale bridge so a Grok Bot can drive a local DeepSeek Harness (dsh) and receive task events back.",
   "type": "module",
   "license": "MIT",

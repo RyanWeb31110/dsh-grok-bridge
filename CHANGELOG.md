@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-10-28
+
+- Unset `DSH_GROK_PROVIDER` and `DSH_GROK_MODEL` now inherit the running profile's `agent-default-model` (`ctx.agentDefaultModel.currentSelection()`), the same route a new desktop chat uses. Those variables are optional overrides only.
+
 ## 0.1.0 — 2026-10-28
 
 Initial public release.

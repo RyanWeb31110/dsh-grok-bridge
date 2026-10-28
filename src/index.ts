@@ -9,8 +9,11 @@ import { openTaskStore } from './store.js'
 
 export const name = 'dsh-grok-bridge'
 
-/** Wait for the agent registry and the persistence service the resume path needs. */
-export const inject = ['agents', 'sessions', 'sessionPersistence']
+/**
+ * Wait for the agent registry, session persistence, and the profile default
+ * model. Stock profiles mount that default as `agent-default-model`.
+ */
+export const inject = ['agents', 'sessions', 'sessionPersistence', 'agentDefaultModel']
 
 export { Config }
 

@@ -11,6 +11,7 @@
         storePath: !!js process.env.DSH_GROK_STORE ?? ''
         cwd: !!js process.env.DSH_GROK_CWD ?? ''
         cwdAllowlist: !!js process.env.DSH_GROK_CWD_ALLOWLIST ?? ''
+        # Empty inherits ctx.agentDefaultModel. Set both to override.
         provider: !!js process.env.DSH_GROK_PROVIDER ?? ''
         model: !!js process.env.DSH_GROK_MODEL ?? ''
         outboundWebhookUrl: !!js process.env.DSH_GROK_OUTBOUND_WEBHOOK_URL ?? ''

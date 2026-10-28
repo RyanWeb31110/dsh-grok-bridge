@@ -58,7 +58,7 @@ function warnAboutConfig(config: BridgeConfig, logger: Logger): void {
   const bind = bindWarning(config.host)
   if (bind) logger.warn(bind)
   if ((config.provider && !config.model) || (!config.provider && config.model)) {
-    logger.warn('set both provider and model, or neither to use the profile default route')
+    logger.warn('set both provider and model to override the profile default; a partial pair is ignored and agent-default-model is used')
   }
   const outbound = config.outboundWebhookUrl
   if (outbound && !isTailnetWebhookUrl(outbound)) {

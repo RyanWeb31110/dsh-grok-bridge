@@ -2,7 +2,10 @@ import { type RawConfig } from './config.js';
 import { type DshContext } from './agent-port.js';
 import { Config } from './schema.js';
 export declare const name = "dsh-grok-bridge";
-/** Wait for the agent registry and the persistence service the resume path needs. */
+/**
+ * Wait for the agent registry, session persistence, and the profile default
+ * model. Stock profiles mount that default as `agent-default-model`.
+ */
 export declare const inject: string[];
 export { Config };
 /**
