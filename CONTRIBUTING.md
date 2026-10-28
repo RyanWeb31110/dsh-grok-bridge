@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for looking at dsh-grok-bridge. The project is MIT-licensed and maintained by QingShanLab.
+Thanks for looking at dsh-grok-bridge. The project is MIT-licensed. Author credit is QingShanLab (@QingShanLab). The public repository is https://github.com/RyanWeb31110/dsh-grok-bridge.
 
 ## Develop
 

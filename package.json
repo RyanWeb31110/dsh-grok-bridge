@@ -5,13 +5,13 @@
   "type": "module",
   "license": "MIT",
   "author": "QingShanLab (https://github.com/QingShanLab)",
-  "homepage": "https://github.com/QingShanLab/dsh-grok-bridge",
+  "homepage": "https://github.com/RyanWeb31110/dsh-grok-bridge",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/QingShanLab/dsh-grok-bridge.git"
+    "url": "git+https://github.com/RyanWeb31110/dsh-grok-bridge.git"
   },
   "bugs": {
-    "url": "https://github.com/QingShanLab/dsh-grok-bridge/issues"
+    "url": "https://github.com/RyanWeb31110/dsh-grok-bridge/issues"
   },
   "keywords": [
     "dsh",

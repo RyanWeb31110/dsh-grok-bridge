@@ -2,7 +2,7 @@
 
 Tailscale bridge between a DeepSeek Harness (`dsh`) on your machine and a Grok Bot on another tailnet node.
 
-**中文摘要：** 这是一个 DeepSeek Harness 插件。它在你的电脑上提供只走 Tailscale（`100.x`）的 HTTP 接口，让远端 Grok Bot 用共享令牌下发任务、查询状态、中途补充指令；dsh 完成、失败或需要批准时，再把事件用 HMAC 签回 Grok Bot。默认不走公网 Funnel，仓库里没有任何密钥。作者 [QingShanLab](https://github.com/QingShanLab)。
+**中文摘要：** 这是一个 DeepSeek Harness 插件。它在你的电脑上提供只走 Tailscale（`100.x`）的 HTTP 接口，让远端 Grok Bot 用共享令牌下发任务、查询状态、中途补充指令；dsh 完成、失败或需要批准时，再把事件用 HMAC 签回 Grok Bot。默认不走公网 Funnel，仓库里没有任何密钥。作者 [@QingShanLab](https://github.com/QingShanLab)。公开仓库是 [RyanWeb31110/dsh-grok-bridge](https://github.com/RyanWeb31110/dsh-grok-bridge)。
 
 The bridge is a Cordis plugin. It runs inside `dsh`, binds an HTTP API, and keeps a task ↔ session map on disk. Grok creates work with `POST /v1/tasks`. dsh runs it. Terminal events go back out as signed webhooks. v0.1 does not grant tool approvals and does not post anywhere public.
 
@@ -43,7 +43,7 @@ Requires Node.js 22.19+ and a DeepSeek Harness 0.2.x profile that stays running.
 The published tree includes `lib/`, so a git install does not need a build script.
 
 ```sh
-dsh plugin --profile web add github:QingShanLab/dsh-grok-bridge
+dsh plugin --profile web add github:RyanWeb31110/dsh-grok-bridge
 ```
 
 From a local checkout:
